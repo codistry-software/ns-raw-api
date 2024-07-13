@@ -1,24 +1,26 @@
+import json
 from webshops.migros.controller import MigrosController
-from src.logger.logger import logger
 
 class WebshopController:
     def __init__(self):
         self.webshops = {
-            'migros': MigrosController,
-            # 'coop': CoopController,  # Add CoopController when available
+            'migros': MigrosController()
         }
+        self.search_terms = self.load_search_terms()
+
+    def load_search_terms(self):
+        with open('search_queries/queries.json', 'r') as file:
+            data = json.load(file)
+        return data['queries']
 
     def process_webshops(self):
-        for name, Controller in self.webshops.items():
-            logger.info(f"Processing webshop: {name}")
-            controller = Controller()
-            product_ids = controller.fetch_product_ids("fleisch")
-            if not product_ids:
-                logger.warning(f"No product IDs found for {name}")
-                continue
-
-            migros_ids = controller.fetch_migros_ids(product_ids)
-            for migros_id in migros_ids:
-                product_details = controller.fetch_product_details(migros_id)
-                if product_details:
-                    logger.info(product_details)
+        for name, controller in self.webshops.items():
+            print(f"\n-----\nProcessing webshop: {name}\n-----")
+            for term in self.search_terms:
+                print(f"\nSearching for: {term}\n-----")
+                results = controller.process_query(term)
+                if not results:
+                    print("No new products found for the search term.")
+                else:
+                    for product in results:
+                        print("\nProduct Details:\n", json.dumps(product, indent=4))

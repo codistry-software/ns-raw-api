@@ -1,5 +1,4 @@
 import requests
-from src.logger.logger import logger
 
 class MigrosProductService:
     def __init__(self, base_url, leshopch_token):
@@ -19,30 +18,42 @@ class MigrosProductService:
             "Accept": "application/json",
             "Leshopch": self.leshopch_token
         }
-
         response = requests.get(url, headers=headers, params=params)
-        logger.debug(f"Response Status Code: {response.status_code}")
         if response.status_code == 200:
-            response_json = response.json()
-            logger.debug(f"Response JSON: {response_json}")
-            return self.parse_product_data(response_json)
+            data = response.json()
+            return self.parse_product_data(data)
         else:
-            logger.error(f"Failed to fetch product data: {response.status_code}, {response.text}")
             return None
+
+    def is_food_product(self, product):
+        return 'nutrientsInformation' in product.get('productInformation', {})
 
     def parse_product_data(self, data):
         if not data:
-            logger.warning("No product data found")
             return None
 
         product = data[0]
+
+        if not self.is_food_product(product):
+            print(f"Überspringe Nicht-Lebensmittel: {product.get('title')}")
+            return None
+
+        is_on_sale = 'badges' in product['offer'] and any(badge['type'] == 'PERCENTAGE_PROMOTION' for badge in product['offer']['badges'])
+        sale_percentage = next((badge['description'] for badge in product['offer']['badges'] if badge['type'] == 'PERCENTAGE_PROMOTION'), "No sale") if is_on_sale else "No sale"
+
+        nutrients_info = product.get("productInformation", {}).get("nutrientsInformation", {}).get("nutrientsTable", {}).get("rows", [])
+        nutrients = {row["label"]: row["values"][0] for row in nutrients_info} if nutrients_info else {}
+        title = product.get("title", "").replace(".", "")
+
         product_info = {
-            "Name": product.get("name"),
+            "Name": title,
             "Price": product["offer"]["price"].get("formattedPrice", "N/A"),
             "Weight": product["offer"].get("quantity", "N/A"),
-            "Nutrients": {row["label"]: row["values"][0] for row in product["productInformation"]["nutrientsInformation"]["nutrientsTable"]["rows"]},
+            "Nutrients": nutrients,
             "Ingredients": product["productInformation"]["mainInformation"].get("ingredients", "N/A"),
-            "Sale": "Yes" if product['offer'].get('isNewOffer', False) else "No",
-            "Category": [breadcrumb["name"] for breadcrumb in product["breadcrumb"]]
+            "Sale": is_on_sale,
+            "Sale Percentage": sale_percentage,
+            "Category": [breadcrumb.get("name", "N/A") for breadcrumb in product.get("breadcrumb", [])]
         }
+
         return product_info
