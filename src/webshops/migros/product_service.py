@@ -26,7 +26,9 @@ class MigrosProductService:
             return None
 
     def is_food_product(self, product):
-        return 'nutrientsInformation' in product.get('productInformation', {})
+        has_ingredients = 'ingredients' in product.get('productInformation', {}).get('mainInformation', {})
+        has_nutrients = 'nutrientsInformation' in product.get('productInformation', {})
+        return has_ingredients or has_nutrients
 
     def parse_product_data(self, data):
         if not data:
@@ -43,6 +45,7 @@ class MigrosProductService:
 
         nutrients_info = product.get("productInformation", {}).get("nutrientsInformation", {}).get("nutrientsTable", {}).get("rows", [])
         nutrients = {row["label"]: row["values"][0] for row in nutrients_info} if nutrients_info else {}
+
         title = product.get("title", "").replace(".", "")
 
         product_info = {
