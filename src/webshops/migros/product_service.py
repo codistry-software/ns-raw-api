@@ -4,6 +4,14 @@ class MigrosProductService:
     def __init__(self, base_url, leshopch_token):
         self.base_url = base_url
         self.leshopch_token = leshopch_token
+        self.non_food_categories = {
+            "Drogerie & Kosmetik",
+            "Waschen & Putzen",
+            "Baby & Kinder",
+            "Tierbedarf",
+            "Haushalt & Wohnen",
+            "Bekleidung & Accessoires"
+        }
 
     def fetch_product_details(self, migros_id):
         url = f"{self.base_url}/product-display/public/v2/product-detail"
@@ -26,9 +34,10 @@ class MigrosProductService:
             return None
 
     def is_food_product(self, product):
-        has_ingredients = 'ingredients' in product.get('productInformation', {}).get('mainInformation', {})
-        has_nutrients = 'nutrientsInformation' in product.get('productInformation', {})
-        return has_ingredients or has_nutrients
+        breadcrumbs = product.get('breadcrumb', [])
+        if breadcrumbs and breadcrumbs[0].get('name') in self.non_food_categories:
+            return False
+        return True
 
     def parse_product_data(self, data):
         if not data:

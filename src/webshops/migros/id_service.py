@@ -29,7 +29,7 @@ class MigrosIDService:
             "query": query,
             "sortFields": [],
             "sortOrder": "asc",
-            "limit": 1000
+            "limit": 1
         }
         response = requests.post(url, json=payload, headers=headers)
         if response.status_code == 200:
