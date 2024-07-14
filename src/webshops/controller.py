@@ -1,10 +1,12 @@
 import json
-from webshops.migros.controller import MigrosController
+# from webshops.migros.controller import MigrosController
+from webshops.coop.controller import CoopController  # Assuming you will create this
 
 class WebshopController:
     def __init__(self):
         self.webshops = {
-            'migros': MigrosController()
+            # 'migros': MigrosController(),  # Commented out for testing
+            'coop': CoopController()  # Add Coop controller
         }
         self.search_terms = self.load_search_terms()
 

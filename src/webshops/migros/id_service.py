@@ -1,65 +1,28 @@
 import requests
 
-class MigrosIDService:
+class CoopIDService:
     def __init__(self, base_url):
         self.base_url = base_url
-        self.leshopch_token = self.authenticate_guest()
-
-    def authenticate_guest(self):
-        url = f"{self.base_url}/authentication/public/v1/api/guest?authorizationNotRequired=true"
-        response = requests.get(url)
-        if response.status_code == 200:
-            return response.headers.get('Leshopch')
-        else:
-            return None
 
     def fetch_product_ids(self, query):
-        if not self.leshopch_token:
-            return []
-
-        url = f"{self.base_url}/onesearch-oc-seaapi/public/v5/search"
+        # Prepare the URL with the query included
+        url = f"{self.base_url}/de/dynamic-pageload/searchresultJson?componentName=searchresultJson&url={self.base_url}/de/search/?text={query}&displayUrl={self.base_url}/de/search/?text={query}&compiledTemplates[]=productTile&compiledTemplates[]=sellingBanner"
         headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "Leshopch": self.leshopch_token
+            "Accept": "*/*",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Accept-Language": "en-GB,en;q=0.9,en-US;q=0.8,de-CH;q=0.7,de;q=0.6",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0"
         }
-        payload = {
-            "regionId": "national",
-            "language": "de",
-            "query": query,
-            "sortFields": [],
-            "sortOrder": "asc",
-            "limit": 1
-        }
-        response = requests.post(url, json=payload, headers=headers)
-        if response.status_code == 200:
-            return response.json().get('productIds', [])
-        else:
-            return []
 
-    def fetch_migros_ids(self, product_ids):
-        if not self.leshopch_token:
-            return []
+        # Send the request
+        response = requests.get(url, headers=headers)
 
-        url = f"{self.base_url}/product-display/public/v4/product-cards"
-        headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "Leshopch": self.leshopch_token
-        }
-        payload = {
-            "offerFilter": {
-                "storeType": "OFFLINE",
-                "region": "national",
-                "ongoingOfferDate": "2024-07-13T00:00:00"
-            },
-            "productFilter": {
-                "uids": product_ids
-            }
-        }
-        response = requests.post(url, json=payload, headers=headers)
+        # Check if the request was successful
         if response.status_code == 200:
-            products = response.json()
-            return [product['migrosId'] for product in products if 'migrosId' in product]
+            # Extract product IDs from the JSON response
+            product_data = response.json()
+            product_ids = [element['id'] for element in product_data['contentJsons']['anchors'][1]['json']['elements']]
+            return product_ids
         else:
+            print(f"Failed to retrieve product IDs: {response.status_code}")
             return []
