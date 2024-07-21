@@ -1,12 +1,12 @@
 import json
 # from webshops.migros.controller import MigrosController
-from webshops.coop.controller import CoopController  # Assuming you will create this
+from webshops.coop.controller import CoopController
 
 class WebshopController:
     def __init__(self):
         self.webshops = {
-            # 'migros': MigrosController(),  # Commented out for testing
-            'coop': CoopController()  # Add Coop controller
+            # 'migros': MigrosController(),
+            'coop': CoopController()
         }
         self.search_terms = self.load_search_terms()
 
@@ -18,11 +18,19 @@ class WebshopController:
     def process_webshops(self):
         for name, controller in self.webshops.items():
             print(f"\n-----\nProcessing webshop: {name}\n-----")
-            for term in self.search_terms:
-                print(f"\nSearching for: {term}\n-----")
-                results = controller.process_query(term)
-                if not results:
-                    print("No new products found for the search term.")
+            if name == 'coop':
+                results = controller.process_all_pages()
+                if results:
+                    for product_id in results:
+                        print("\nFound Product ID:", product_id)
                 else:
-                    for product in results:
-                        print("\nProduct Details:\n", json.dumps(product, indent=4))
+                    print("No products found.")
+            else:
+                for term in self.search_terms:
+                    print(f"\nSearching for: {term}\n-----")
+                    results = controller.process_query(term)
+                    if not results:
+                        print("No new products found for the search term.")
+                    else:
+                        for product in results:
+                            print("\nProduct Details:\n", json.dumps(product, indent=4))

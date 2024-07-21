@@ -6,7 +6,8 @@ class CoopIDService:
         self.session = requests.Session()
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0',
-            'Accept': 'application/json, text/plain, */*',
+            'Accept': '*/*',
+            'Accept-Encoding': 'gzip, deflate, br, zstd',
             'Accept-Language': 'en-GB,en;q=0.9,en-US;q=0.8,de-CH;q=0.7,de;q=0.6',
             'Referer': 'https://www.coop.ch/de'
         }
@@ -19,25 +20,36 @@ class CoopIDService:
         else:
             print("Session initialized with cookies:", self.session.cookies.get_dict())
 
-    def search_products(self, query):
-        url = f"{self.base_url}/de/dynamic-pageload/searchresultJson?componentName=searchresultJson&url={self.base_url}/de/search/?text={query}&displayUrl={self.base_url}/de/search/?text={query}&compiledTemplates[]=productTile&compiledTemplates[]=sellingBanner"
+    def search_products_by_page(self, query='all', page=1):
+        url = f"https://www.coop.ch/de/dynamic-pageload/searchresultJson?componentName=searchresultJson&url=https%3A%2F%2Fwww.coop.ch%2Fde%2Fsearch%3Fpage%3D{page}%26pageSize%3D30%26q%3D{query}%253Arelevance%26text%3D{query}%26sort%3Drelevance&displayUrl=https%3A%2F%2Fwww.coop.ch%2Fde%2Fsearch%3Fpage%3D{page}%26pageSize%3D30%26q%3D{query}%253Arelevance%26text%3D{query}%26sort%3Drelevance&compiledTemplates%5B%5D=productTile&compiledTemplates%5B%5D=sellingBanner&_=1721519140758"
         response = self.session.get(url, headers=self.headers)
         if response.status_code == 200:
             try:
                 product_data = response.json()
-                # Ensuring the existence of the expected data structure
                 content_jsons = product_data.get('contentJsons', {})
-                anchors = content_jsons.get('anchors', [])
-                if anchors and len(anchors) > 1:
-                    elements = anchors[1].get('json', {}).get('elements', [])
-                    product_ids = [element['id'] for element in elements]
-                    return product_ids
-                else:
-                    print("No products found or unexpected JSON structure.")
-                    return []
+                if content_jsons:
+                    for anchor in content_jsons.get('anchors', []):
+                        if anchor.get('name') == 'productTile':
+                            elements = anchor.get('json', {}).get('elements', [])
+                            product_ids = [element['id'] for element in elements if 'id' in element]
+                            return product_ids
+                print("No products found or unexpected JSON structure.")
+            except ValueError as e:
+                print(f"JSON decoding failed: {e}")
             except KeyError:
                 print("KeyError: The JSON response does not have the expected format.")
-                return []
         else:
             print(f"Failed to retrieve product IDs with status code: {response.status_code}")
-            return []
+        return []
+
+    def search_all_products(self, query='all'):
+        page = 1
+        all_product_ids = []
+        while True:
+            product_ids = self.search_products_by_page(query, page)
+            if product_ids:
+                all_product_ids.extend(product_ids)
+                page += 1
+            else:
+                break
+        return all_product_ids
