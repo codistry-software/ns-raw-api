@@ -1,5 +1,6 @@
 import requests
 
+
 class CoopIDService:
     def __init__(self, base_url):
         self.base_url = base_url
@@ -20,6 +21,24 @@ class CoopIDService:
         else:
             print("Session initialized with cookies:", self.session.cookies.get_dict())
 
+    def is_valid_path(self, path):
+        excluded_prefixes = [
+            "https://www.coop.ch/de/haushalt-tier",
+            "https://www.coop.ch/de/kosmetik-gesundheit"
+        ]
+        included_prefixes = [
+            "https://www.coop.ch/de/baby-kind/babynahrung",
+            "https://www.coop.ch/de/baby-kind/milchpulver"
+        ]
+
+        if any(path.startswith(prefix) for prefix in excluded_prefixes):
+            return False
+
+        if path.startswith("https://www.coop.ch/de/baby-kind"):
+            return any(path.startswith(prefix) for prefix in included_prefixes)
+
+        return True
+
     def search_products_by_page(self, query='all', page=1):
         url = f"{self.base_url}/de/dynamic-pageload/searchresultJson?componentName=searchresultJson&url=https%3A%2F%2Fwww.coop.ch%2Fde%2Fsearch%3Fpage%3D{page}%26pageSize%3D30%26q%3D{query}%253Arelevance%26text%3D{query}%26sort%3Drelevance&displayUrl=https%3A%2F%2Fwww.coop.ch%2Fde%2Fsearch%3Fpage%3D{page}%26pageSize%3D30%26q%3D{query}%253Arelevance%26text%3D{query}%26sort%3Drelevance&compiledTemplates%5B%5D=productTile&compiledTemplates%5B%5D=sellingBanner"
         response = self.session.get(url, headers=self.headers)
@@ -36,7 +55,8 @@ class CoopIDService:
                                 href = element.get('href')
                                 if href:
                                     full_path = f"https://www.coop.ch{href}?context=search"
-                                    paths.append(full_path)
+                                    if self.is_valid_path(full_path):
+                                        paths.append(full_path)
                     return paths
                 print("No products found or unexpected JSON structure.")
             except ValueError as e:
