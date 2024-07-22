@@ -21,35 +21,40 @@ class CoopIDService:
             print("Session initialized with cookies:", self.session.cookies.get_dict())
 
     def search_products_by_page(self, query='all', page=1):
-        url = f"https://www.coop.ch/de/dynamic-pageload/searchresultJson?componentName=searchresultJson&url=https%3A%2F%2Fwww.coop.ch%2Fde%2Fsearch%3Fpage%3D{page}%26pageSize%3D30%26q%3D{query}%253Arelevance%26text%3D{query}%26sort%3Drelevance&displayUrl=https%3A%2F%2Fwww.coop.ch%2Fde%2Fsearch%3Fpage%3D{page}%26pageSize%3D30%26q%3D{query}%253Arelevance%26text%3D{query}%26sort%3Drelevance&compiledTemplates%5B%5D=productTile&compiledTemplates%5B%5D=sellingBanner&_=1721519140758"
+        url = f"{self.base_url}/de/dynamic-pageload/searchresultJson?componentName=searchresultJson&url=https%3A%2F%2Fwww.coop.ch%2Fde%2Fsearch%3Fpage%3D{page}%26pageSize%3D30%26q%3D{query}%253Arelevance%26text%3D{query}%26sort%3Drelevance&displayUrl=https%3A%2F%2Fwww.coop.ch%2Fde%2Fsearch%3Fpage%3D{page}%26pageSize%3D30%26q%3D{query}%253Arelevance%26text%3D{query}%26sort%3Drelevance&compiledTemplates%5B%5D=productTile&compiledTemplates%5B%5D=sellingBanner"
         response = self.session.get(url, headers=self.headers)
         if response.status_code == 200:
             try:
                 product_data = response.json()
                 content_jsons = product_data.get('contentJsons', {})
                 if content_jsons:
+                    paths = []
                     for anchor in content_jsons.get('anchors', []):
                         if anchor.get('name') == 'productTile':
                             elements = anchor.get('json', {}).get('elements', [])
-                            product_ids = [element['id'] for element in elements if 'id' in element]
-                            return product_ids
+                            for element in elements:
+                                href = element.get('href')
+                                if href:
+                                    full_path = f"https://www.coop.ch{href}?context=search"
+                                    paths.append(full_path)
+                    return paths
                 print("No products found or unexpected JSON structure.")
             except ValueError as e:
                 print(f"JSON decoding failed: {e}")
             except KeyError:
                 print("KeyError: The JSON response does not have the expected format.")
         else:
-            print(f"Failed to retrieve product IDs with status code: {response.status_code}")
+            print(f"Failed to retrieve product paths with status code: {response.status_code}")
         return []
 
     def search_all_products(self, query='all'):
         page = 1
-        all_product_ids = []
+        all_product_paths = []
         while True:
-            product_ids = self.search_products_by_page(query, page)
-            if product_ids:
-                all_product_ids.extend(product_ids)
+            product_paths = self.search_products_by_page(query, page)
+            if product_paths:
+                all_product_paths.extend(product_paths)
                 page += 1
             else:
                 break
-        return all_product_ids
+        return all_product_paths
