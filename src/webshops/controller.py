@@ -6,7 +6,7 @@ class WebshopController:
     def __init__(self):
         self.webshops = {
             'migros': MigrosController(),
-            #'coop': CoopController()
+            'coop': CoopController()
         }
         self.search_terms = self.load_search_terms()
 
