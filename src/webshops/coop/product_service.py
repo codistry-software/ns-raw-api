@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import time
 import random
-
+from urllib.parse import urlparse
 
 class CoopProductService:
     def __init__(self, session):
@@ -46,12 +46,23 @@ class CoopProductService:
                     if key and value:
                         nutrients_dict[key] = value
 
+                sale_percentage = self.safe_get_text(soup, 'span', {'data-product-saving-text': '',
+                                                                    'class': 'productBasicInfo__price-text-saving-inner'})
+
+                parsed_url = urlparse(url)
+                path_parts = parsed_url.path.split('/')
+                category = [part for part in path_parts if part and part not in ('de', 'p')]
+                if category and category[-1].isdigit():
+                    category = category[:-1]
+
                 product_info = {
                     "Name": title,
                     "Price": price,
                     "Weight": weight,
                     "Nutrients": nutrients_dict,
-                    "Ingredients": ingredients
+                    "Ingredients": ingredients,
+                    "Sale Percentage": sale_percentage if sale_percentage else None,
+                    "Category": category
                 }
                 return product_info
 
