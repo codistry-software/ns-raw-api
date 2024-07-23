@@ -31,6 +31,7 @@ class MigrosProductService:
             data = response.json()
             return self.parse_product_data(data)
         else:
+            print(f"Failed to fetch product details. Status code: {response.status_code}")
             return None
 
     def is_food_product(self, product):
@@ -49,8 +50,9 @@ class MigrosProductService:
             print(f"Überspringe Nicht-Lebensmittel: {product.get('title')}")
             return None
 
-        is_on_sale = 'badges' in product['offer'] and any(badge['type'] == 'PERCENTAGE_PROMOTION' for badge in product['offer']['badges'])
-        sale_percentage = next((badge['description'] for badge in product['offer']['badges'] if badge['type'] == 'PERCENTAGE_PROMOTION'), "No sale") if is_on_sale else "No sale"
+        offer = product.get('offer', {})
+        is_on_sale = 'badges' in offer and any(badge['type'] == 'PERCENTAGE_PROMOTION' for badge in offer.get('badges', []))
+        sale_percentage = next((badge['description'] for badge in offer.get('badges', []) if badge['type'] == 'PERCENTAGE_PROMOTION'), "No sale") if is_on_sale else "No sale"
 
         nutrients_info = product.get("productInformation", {}).get("nutrientsInformation", {}).get("nutrientsTable", {}).get("rows", [])
         nutrients = {row["label"]: row["values"][0] for row in nutrients_info} if nutrients_info else {}
@@ -59,11 +61,10 @@ class MigrosProductService:
 
         product_info = {
             "Name": title,
-            "Price": product["offer"]["price"].get("formattedPrice", "N/A"),
-            "Weight": product["offer"].get("quantity", "N/A"),
+            "Price": offer.get('price', {}).get("formattedPrice", "N/A"),
+            "Weight": offer.get("quantity", "N/A"),
             "Nutrients": nutrients,
-            "Ingredients": product["productInformation"]["mainInformation"].get("ingredients", "N/A"),
-            "Sale": is_on_sale,
+            "Ingredients": product.get("productInformation", {}).get("mainInformation", {}).get("ingredients", "N/A"),
             "Sale Percentage": sale_percentage,
             "Category": [breadcrumb.get("name", "N/A") for breadcrumb in product.get("breadcrumb", [])]
         }
