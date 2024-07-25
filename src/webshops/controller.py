@@ -1,12 +1,14 @@
 import json
 from webshops.migros.controller import MigrosController
 from webshops.coop.controller import CoopController
+from webshops.denner.controller import DennerController
 
 class WebshopController:
     def __init__(self):
         self.webshops = {
             'migros': MigrosController(),
-            'coop': CoopController()
+            'coop': CoopController(),
+            'denner': DennerController()
         }
         self.search_terms = self.load_search_terms()
 
@@ -25,6 +27,14 @@ class WebshopController:
                         print("\nFound Product ID:", product_id)
                 else:
                     print("No products found.")
+            elif name == 'denner':
+                print("\nProcessing all Denner products\n-----")
+                results = controller.process_query('*')
+                if not results:
+                    print("No products found.")
+                else:
+                    for product in results:
+                        print("\nProduct Details:\n", json.dumps(product, indent=4))
             else:
                 for term in self.search_terms:
                     print(f"\nSearching for: {term}\n-----")
