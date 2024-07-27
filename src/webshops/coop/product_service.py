@@ -63,7 +63,7 @@ class CoopProductService:
                     "Ingredients": ingredients,
                     "Sale Percentage": sale_percentage if sale_percentage else None,
                     "Category": category,
-                    "URL": url  # Added URL to the product_info dictionary
+                    "URL": url
                 }
                 return product_info
 
