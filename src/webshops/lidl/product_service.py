@@ -22,7 +22,6 @@ class LidlProductService:
             title = self.extract_title(soup)
             price_info = self.extract_price_info(soup)
             weight = self.extract_weight(soup)
-            category = self.extract_category(url)
 
             product_info = {
                 "Name": title,
@@ -31,7 +30,7 @@ class LidlProductService:
                 "Nutrients": {},
                 "Ingredients": None,
                 "Sale Percentage": price_info['sale_percentage'],
-                "Category": category,
+                "Category": None,
                 "URL": url
             }
 
@@ -67,7 +66,3 @@ class LidlProductService:
             if weight_match:
                 return weight_match.group(1)
         return None
-
-    def extract_category(self, url):
-        parts = url.split('/')
-        return parts[-2] if len(parts) > 2 else None
