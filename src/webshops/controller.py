@@ -9,8 +9,8 @@ class WebshopController:
         self.webshops = {
             #'migros': MigrosController(),
             #'coop': CoopController(),
-            #'denner': DennerController(),
-            'lidl': LidlController()
+            'denner': DennerController(),
+            #'lidl': LidlController()
         }
         self.search_terms = self.load_search_terms()
 

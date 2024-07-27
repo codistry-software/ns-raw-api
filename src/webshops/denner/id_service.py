@@ -55,26 +55,8 @@ class DennerIDService:
                                 full_url = self.base_url + url
                                 product_name = url_element.text.strip()
                                 product_info.append((product_name, full_url))
-                                print(f"Product: {product_name} - URL: {full_url}")
 
             return product_info, total_results
         else:
             print(f"Failed to fetch product URLs. Status code: {response.status_code}")
             return [], 0
-
-    def fetch_all_product_urls(self):
-        all_product_info = []
-        page = 1
-        total_results = 0
-
-        while True:
-            product_info, total_results = self.fetch_product_urls(page)
-            all_product_info.extend(product_info)
-            print(f"Page {page}: Fetched {len(product_info)} products. Total: {len(all_product_info)}/{total_results}")
-
-            if len(all_product_info) >= total_results or len(product_info) == 0:
-                break
-
-            page += 1
-
-        return all_product_info
